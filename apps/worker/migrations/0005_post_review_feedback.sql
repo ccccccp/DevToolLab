@@ -1,0 +1,1 @@
+ALTER TABLE posts ADD COLUMN review_feedback TEXT NOT NULL DEFAULT '';

@@ -1,0 +1,24 @@
+{
+  "name": "@devtoollab/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env.local ../../node_modules/wrangler/bin/wrangler.js dev --port 8787",
+    "dev:openai-proxy": "node --env-file-if-exists=.env.local ./scripts/openai-proxy.mjs",
+    "build": "wrangler deploy --dry-run",
+    "typecheck": "tsc --noEmit",
+    "test:openai-connectivity": "node --env-file-if-exists=.env.local --experimental-strip-types ./tests/openai-connectivity.smoke.ts",
+    "test:openai-article": "node --env-file-if-exists=.env.local --experimental-strip-types ./tests/openai-article-crawl.smoke.ts",
+    "db:migrate:local": "wrangler d1 migrations apply devtoollab --local",
+    "db:seed:local": "wrangler d1 execute devtoollab --local --file ./seed.sql"
+  },
+  "dependencies": {
+    "@devtoollab/shared": "file:../../packages/shared",
+    "hono": "^4.7.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250418.0",
+    "@types/node": "^22.15.3",
+    "wrangler": "^4.12.0"
+  }
+}

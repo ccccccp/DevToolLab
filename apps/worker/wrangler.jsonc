@@ -1,0 +1,19 @@
+{
+  "name": "devtoollab-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-22",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "devtoollab",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "preview_database_id": "devtoollab-local"
+    }
+  ],
+  "vars": {
+    "OPENAI_API_KEY": "",
+    "OPENAI_BASE_URL": "https://api.openai.com/v1",
+    "OPENAI_MODEL": "gpt-4o-mini",
+    "OPENAI_TIMEOUT_MS": "5000"
+  }
+}

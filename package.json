@@ -1,0 +1,24 @@
+{
+  "name": "devtoollab",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @devtoollab/web",
+    "dev:admin": "npm run dev -w @devtoollab/admin",
+    "dev:worker": "npm run dev -w @devtoollab/worker",
+    "dev:openai-proxy": "npm run dev:openai-proxy -w @devtoollab/worker",
+    "db:migrate:local": "npm run db:migrate:local -w @devtoollab/worker",
+    "db:seed:local": "npm run db:seed:local -w @devtoollab/worker",
+    "test:worker:openai-connectivity": "npm run test:openai-connectivity -w @devtoollab/worker",
+    "test:worker:openai-article": "npm run test:openai-article -w @devtoollab/worker",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
