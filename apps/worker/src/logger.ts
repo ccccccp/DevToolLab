@@ -1,3 +1,4 @@
+import { describeAiRuntimeEnv, type AiRuntimeEnv } from "./ai-config";
 import type { SqlRow } from "./types";
 
 type LogDetails = Record<string, unknown>;
@@ -8,18 +9,6 @@ function readLocalProcessEnv() {
       env?: Record<string, string | undefined>;
     };
   }).process?.env;
-}
-
-function maskSecret(value: string | undefined) {
-  if (!value) {
-    return "";
-  }
-
-  if (value.length <= 8) {
-    return "***";
-  }
-
-  return `${value.slice(0, 4)}***${value.slice(-4)}`;
 }
 
 async function writeLog(
@@ -81,33 +70,18 @@ export function logCrawlError(db: D1Database | undefined, event: string, details
   writeLog(db, "error", "crawl", event, details);
 }
 
-export function logRuntimeEnv(env: {
-  OPENAI_API_KEY?: string;
-  OPENAI_BASE_URL?: string;
-  OPENAI_API_BASE?: string;
-  OPENAI_MODEL?: string;
-  OPENAI_TIMEOUT_MS?: string;
-}) {
+export function logRuntimeEnv(env: AiRuntimeEnv) {
   const processEnv = readLocalProcessEnv();
   const payload = {
     level: "info",
     scope: "runtime",
     event: "env_snapshot",
     timestamp: new Date().toISOString(),
-    openAi: {
-      baseUrl: env.OPENAI_BASE_URL || env.OPENAI_API_BASE || "https://api.openai.com/v1",
-      model: env.OPENAI_MODEL || "gpt-4o-mini",
-      timeoutMs: env.OPENAI_TIMEOUT_MS || "",
-      apiKeyConfigured: Boolean(env.OPENAI_API_KEY),
-      apiKeyMasked: maskSecret(env.OPENAI_API_KEY)
-    },
-    localProxy: {
-      nodeUseEnvProxy: processEnv?.NODE_USE_ENV_PROXY || "",
-      openAiConnectivityProxy: processEnv?.OPENAI_CONNECTIVITY_PROXY || "",
-      httpProxy: processEnv?.HTTP_PROXY || "",
-      httpsProxy: processEnv?.HTTPS_PROXY || "",
-      noProxy: processEnv?.NO_PROXY || ""
-    }
+    ai: describeAiRuntimeEnv(env),
+    openAiConnectivityProxy: processEnv?.OPENAI_CONNECTIVITY_PROXY || "",
+    httpProxy: processEnv?.HTTP_PROXY || "",
+    httpsProxy: processEnv?.HTTPS_PROXY || "",
+    noProxy: processEnv?.NO_PROXY || ""
   };
 
   console.log(JSON.stringify(payload));

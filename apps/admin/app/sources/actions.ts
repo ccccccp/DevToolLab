@@ -1,15 +1,16 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createSource, updateSourceStatus } from "@devtoollab/shared/api-client";
+import { saveSource, updateSourceStatus } from "@devtoollab/shared/api-client";
 import type { SourceRecord } from "@devtoollab/shared";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
-export async function createSourceAction(formData: FormData) {
-  await createSource({
+export async function saveSourceAction(formData: FormData) {
+  await saveSource({
+    id: text(formData, "id") || undefined,
     name: text(formData, "name"),
     slug: text(formData, "slug") || undefined,
     type: text(formData, "type"),

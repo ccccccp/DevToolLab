@@ -18,7 +18,7 @@ function ReviewMeta({ review }: { review: ReviewQueueItem }) {
 
 export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
   const [reviewQuery, setReviewQuery] = useState("");
-  const [reviewStatus, setReviewStatus] = useState("all");
+  const [reviewStatus, setReviewStatus] = useState("pending");
   const [reviewEntityType, setReviewEntityType] = useState("all");
   const [reviewView, setReviewView] = useState<"cards" | "list">("list");
   const [selectedReviewIds, setSelectedReviewIds] = useState<string[]>([]);
@@ -37,10 +37,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
     });
   }, [reviewEntityType, reviewQuery, reviewStatus, reviews]);
 
-  const selectableReviewIds = useMemo(
-    () => filteredReviews.filter((review) => review.entityType === "post").map((review) => review.id),
-    [filteredReviews]
-  );
+  const selectableReviewIds = useMemo(() => filteredReviews.map((review) => review.id), [filteredReviews]);
 
   const selectedVisibleCount = selectedReviewIds.filter((id) => selectableReviewIds.includes(id)).length;
   const allVisibleSelected =
@@ -75,7 +72,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
             <h2>待审内容</h2>
             <span className="section-count">{filteredReviews.length} 条</span>
           </div>
-          <p className="muted">共 {reviews.length} 条待审记录，当前展示 {filteredReviews.length} 条。</p>
+          <p className="muted">共 {reviews.length} 条记录，当前展示 {filteredReviews.length} 条。</p>
         </div>
         <div className="filter-stack">
           <div className="filter-bar">
@@ -156,7 +153,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
               <article className="card review-list-item" key={review.id}>
                 <div className="review-list-main">
                   <div className="review-list-head">
-                    {review.entityType === "post" ? (
+                    <>
                       <label className="review-select-control review-list-checkbox">
                         <input
                           type="checkbox"
@@ -165,7 +162,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
                         />
                         <span>选择</span>
                       </label>
-                    ) : null}
+                    </>
                     <div className="badge-row">
                       <span className={`status ${review.reviewStatus}`}>{review.reviewStatus}</span>
                       <span className="status featured">{review.entityType}</span>
@@ -192,7 +189,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
           {filteredReviews.length > 0 ? (
             filteredReviews.map((review) => (
               <article className="card compact-card" key={review.id}>
-                {review.entityType === "post" ? (
+                <>
                   <label className="review-select-control">
                     <input
                       type="checkbox"
@@ -201,7 +198,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
                     />
                     <span>选择</span>
                   </label>
-                ) : null}
+                </>
                 <div className="badge-row">
                   <span className={`status ${review.reviewStatus}`}>{review.reviewStatus}</span>
                   <span className="status featured">{review.entityType}</span>

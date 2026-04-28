@@ -13,6 +13,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isDev = process.env.NODE_ENV === "development";
+
   return (
     <html lang="zh-CN">
       <body>
@@ -24,12 +26,17 @@ export default function RootLayout({
             <nav className="nav">
               <Link href="/news">文章</Link>
               <Link href="/tools">工具</Link>
-              <a href="http://localhost:5174" target="_blank" rel="noreferrer">
-                后台
-              </a>
-              <a href="http://localhost:8787/health" target="_blank" rel="noreferrer">
-                API
-              </a>
+              {isDev && (
+                <>
+                  <a href="http://localhost:5174" target="_blank" rel="noreferrer">
+                    后台
+                  </a>
+                  <a href="http://localhost:8787/health" target="_blank" rel="noreferrer">
+                    API
+                  </a>
+                </>
+              )}
+
             </nav>
           </header>
           {children}

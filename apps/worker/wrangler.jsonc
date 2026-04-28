@@ -2,6 +2,9 @@
   "name": "devtoollab-worker",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-22",
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -11,9 +14,11 @@
     }
   ],
   "vars": {
-    "OPENAI_API_KEY": "",
+    "AI_PROVIDER": "openai",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_MODEL": "gpt-4o-mini",
     "OPENAI_TIMEOUT_MS": "5000"
+    // 切换到 DeepSeek 时，把 AI_PROVIDER 改成 "deepseek"，并填充 DEEPSEEK_* 变量。
+    // 切换到 Grok 时，把 AI_PROVIDER 改成 "grok"，并填充 XAI_* 变量。
   }
 }

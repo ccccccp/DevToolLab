@@ -2,7 +2,7 @@ import type { CrawlTaskRecord, PostRecord, ReviewQueueItem, SourceRecord, ToolRe
 import { generateShortChineseArticle, type GeneratedArticleContent } from "./ai-content";
 import { fetchArticleContent, type ArticleExtractionResult } from "./article-fetcher";
 import { crawlSource, type FetchedItem } from "./crawlers";
-import { exec, first, makeId, normalizeUrl, nowIso, sha256, slugify, truncate, uniqueSlug, asBoolean } from "./db";
+import { exec, first, makeId, normalizeUrl, nowIso, run, sha256, slugify, truncate, uniqueSlug, asBoolean } from "./db";
 import { getErrorLogDetails, logCrawlError, logCrawlEvent } from "./logger";
 import { mapPost, mapReview, mapTask, mapTool } from "./mappers";
 import type { Env, SqlRow } from "./types";
@@ -153,12 +153,14 @@ async function updateTaskRunningState(db: D1Database, taskId: string, startedAt:
     db,
     `UPDATE crawl_tasks
      SET status = 'running',
-         started_at = COALESCE(started_at, ?),
+         requested_at = ?,
+         started_at = ?,
          finished_at = NULL,
+         items_found = 0,
          error_message = '',
          updated_at = ?
      WHERE id = ?`,
-    [startedAt, startedAt, taskId]
+    [startedAt, startedAt, startedAt, taskId]
   );
 }
 
@@ -388,6 +390,82 @@ export async function getTaskById(db: D1Database, id: string) {
      WHERE crawl_tasks.id = ?`,
     [id]
   );
+}
+
+type ScheduledTaskCandidate = {
+  id: string;
+  source_id: string;
+  source_name: string;
+  source_enabled: number;
+  source_status: string;
+  source_last_crawled_at: string | null;
+  source_crawl_interval_minutes: number;
+  source_parser_key: string;
+  source_base_url: string;
+  updated_at: string;
+  requested_at: string;
+};
+
+function isSourceDue(lastCrawledAt: string | null, crawlIntervalMinutes: number, nowMs: number) {
+  if (!lastCrawledAt) {
+    return true;
+  }
+
+  const lastRunMs = Date.parse(lastCrawledAt);
+  if (Number.isNaN(lastRunMs)) {
+    return true;
+  }
+
+  return nowMs - lastRunMs >= Math.max(crawlIntervalMinutes, 1) * 60 * 1000;
+}
+
+export async function listDueScheduledTaskIds(db: D1Database, nowMs = Date.now()) {
+  const rows = await run<ScheduledTaskCandidate>(
+    db,
+    `SELECT
+       crawl_tasks.id,
+       crawl_tasks.source_id,
+       crawl_tasks.updated_at,
+       crawl_tasks.requested_at,
+       sources.name AS source_name,
+       sources.enabled AS source_enabled,
+       sources.status AS source_status,
+       sources.last_crawled_at AS source_last_crawled_at,
+       sources.crawl_interval_minutes AS source_crawl_interval_minutes,
+       sources.parser_key AS source_parser_key,
+       sources.base_url AS source_base_url
+     FROM crawl_tasks
+     INNER JOIN sources ON sources.id = crawl_tasks.source_id
+     WHERE crawl_tasks.run_mode = 'scheduled'
+       AND crawl_tasks.status != 'running'
+       AND sources.enabled = 1
+       AND sources.status = 'active'
+       AND sources.parser_key != ''
+       AND sources.base_url != ''
+     ORDER BY crawl_tasks.updated_at DESC, crawl_tasks.requested_at DESC`
+  );
+
+  const selectedTaskIds: string[] = [];
+  const seenSourceIds = new Set<string>();
+
+  for (const row of rows) {
+    const sourceId = String(row.source_id ?? "");
+    if (!sourceId || seenSourceIds.has(sourceId)) {
+      continue;
+    }
+
+    const crawlIntervalMinutes = Number(row.source_crawl_interval_minutes ?? 60);
+    const lastCrawledAt = row.source_last_crawled_at ? String(row.source_last_crawled_at) : null;
+
+    if (!isSourceDue(lastCrawledAt, crawlIntervalMinutes, nowMs)) {
+      continue;
+    }
+
+    seenSourceIds.add(sourceId);
+    selectedTaskIds.push(String(row.id));
+  }
+
+  return selectedTaskIds;
 }
 
 export async function executeCrawlTask(db: D1Database, env: Env, taskId: string): Promise<CrawlTaskRecord> {

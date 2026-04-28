@@ -239,6 +239,11 @@ main {
   font-size: 14px;
 }
 
+.meta-line-strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .editor-form {
   display: grid;
   gap: 18px;
@@ -753,7 +758,6 @@ main {
   display: grid;
   gap: 12px;
   width: min(400px, calc(100vw - 48px));
-  pointer-events: none;
 }
 
 .toast {

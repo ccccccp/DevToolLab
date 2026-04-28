@@ -27,7 +27,7 @@ export async function savePostAction(formData: FormData) {
     featured: formData.has("featured")
   });
 
-  redirect(`/posts/${post.slug}`);
+  redirect(`/posts/${encodeURIComponent(post.slug)}`);
 }
 
 export async function deletePostAction(formData: FormData) {

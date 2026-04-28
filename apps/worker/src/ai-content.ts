@@ -1,10 +1,6 @@
-type AiContentBindings = {
-  OPENAI_API_KEY?: string;
-  OPENAI_BASE_URL?: string;
-  OPENAI_API_BASE?: string;
-  OPENAI_MODEL?: string;
-  OPENAI_TIMEOUT_MS?: string;
-};
+import { callChatCompletion, parseJsonObject, type ChatMessage } from "./ai-client";
+import { makeAiCooldownKey, isAiCoolingDown, markAiCoolingDown } from "./ai-runtime";
+import { resolveAiConfig, type AiRuntimeEnv } from "./ai-config";
 
 export type AiContentInput = {
   sourceName: string;
@@ -28,17 +24,9 @@ export type GeneratedArticleContent = {
   usedFallback: boolean;
 };
 
-type Message = {
-  role: "system" | "user";
-  content: string;
-};
-
-const DEFAULT_OPENAI_TIMEOUT_MS = 8_000;
-const AI_COOLDOWN_MS = 60_000;
+const DEFAULT_TIMEOUT_MS = 8_000;
 const MAX_INPUT_TEXT_LENGTH = 12_000;
 const MAX_TAGS = 5;
-
-let aiUnavailableUntil = 0;
 
 function cleanText(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -62,25 +50,25 @@ function normalizeTags(tags: unknown, sourceType: string) {
 function buildFallbackSummary(input: AiContentInput) {
   const raw = cleanText(input.articleText || input.summary || input.contentSnippet || "");
   if (raw) {
-    return `内容来自 ${input.sourceName}，核心信息是：${truncate(raw, 120)}`;
+    return `\u5185\u5bb9\u6765\u81ea ${input.sourceName}\uff0c\u6838\u5fc3\u4fe1\u606f\u662f\uff1a${truncate(raw, 120)}`;
   }
 
-  return `内容来自 ${input.sourceName}，当前仅抓取到标题，发布前需要补充原文信息。`;
+  return `\u5185\u5bb9\u6765\u81ea ${input.sourceName}\uff0c\u5f53\u524d\u4ec5\u6293\u53d6\u5230\u6807\u9898\uff0c\u53d1\u5e03\u524d\u9700\u8981\u8865\u5145\u539f\u6587\u4fe1\u606f\u3002`;
 }
 
 function buildFallbackContent(input: AiContentInput): GeneratedArticleContent {
   const summary = buildFallbackSummary(input);
   const content = [
-    "## 核心摘要",
+    "## \u6838\u5fc3\u6458\u8981",
     summary,
     "",
-    "## 重点信息",
-    `- 来源：${input.sourceName}`,
-    `- 原文：${input.url}`,
-    input.publishedAt ? `- 发布时间：${input.publishedAt}` : "- 发布时间：未知",
+    "## \u91cd\u70b9\u4fe1\u606f",
+    `- \u6765\u6e90\uff1a${input.sourceName}`,
+    `- \u539f\u6587\uff1a${input.url}`,
+    input.publishedAt ? `- \u53d1\u5e03\u65f6\u95f4\uff1a${input.publishedAt}` : "- \u53d1\u5e03\u65f6\u95f4\uff1a\u672a\u77e5",
     "",
-    "## 编辑提醒",
-    "正文抓取或 AI 生成不完整，发布前请人工核对原文、补充背景，并确认来源授权与引用边界。"
+    "## \u7f16\u8f91\u63d0\u9192",
+    "\u6b63\u6587\u6293\u53d6\u6216 AI \u751f\u6210\u5185\u5bb9\u4e0d\u5b8c\u5168\u53ef\u9760\uff0c\u53d1\u5e03\u524d\u8bf7\u4eba\u5de5\u6838\u5bf9\u539f\u6587\u3001\u8865\u5145\u80cc\u666f\uff0c\u5e76\u786e\u8ba4\u6765\u6e90\u6388\u6743\u8fb9\u754c\u3002"
   ].join("\n");
 
   return {
@@ -88,7 +76,7 @@ function buildFallbackContent(input: AiContentInput): GeneratedArticleContent {
     summary: truncate(summary, 240),
     content,
     tags: [input.sourceType, "ai"],
-    sourceNote: `内容基于 ${input.sourceName} 的公开信息生成，发布前请核对原文。`,
+    sourceNote: `\u5185\u5bb9\u57fa\u4e8e ${input.sourceName} \u7684\u516c\u5f00\u4fe1\u606f\u751f\u6210\uff0c\u53d1\u5e03\u524d\u8bf7\u6838\u5bf9\u539f\u6587\u3002`,
     model: "fallback",
     usedFallback: true
   };
@@ -97,48 +85,49 @@ function buildFallbackContent(input: AiContentInput): GeneratedArticleContent {
 function buildNoArticleContent(input: AiContentInput): GeneratedArticleContent {
   return {
     title: input.title,
-    summary: "无",
-    content: "无",
+    summary: "\u65e0",
+    content: "\u65e0",
     tags: [input.sourceType, "no-content"],
-    sourceNote: `未抓取到正文，仅保留来源信息：${input.sourceName}。`,
+    sourceNote: `\u672a\u6293\u53d6\u5230\u6b63\u6587\uff0c\u4ec5\u4fdd\u7559\u6765\u6e90\u4fe1\u606f\uff1a${input.sourceName}\u3002`,
     model: "no-content",
     usedFallback: true
   };
 }
 
-function resolveTimeoutMs(bindings: AiContentBindings) {
-  const parsed = Number.parseInt(bindings.OPENAI_TIMEOUT_MS ?? "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_OPENAI_TIMEOUT_MS;
-}
+function buildMessages(input: AiContentInput, articleText: string): ChatMessage[] {
+  const sourceText = truncate(articleText || input.contentSnippet || input.summary || "", MAX_INPUT_TEXT_LENGTH);
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(`timeout:${timeoutMs}`), timeoutMs);
+  const userPrompt = [
+    "\u8bf7\u57fa\u4e8e\u4e0b\u9762\u7684\u6293\u53d6\u5185\u5bb9\u751f\u6210\u4e00\u7bc7\u9002\u5408\u4eba\u5de5\u5ba1\u6838\u53d1\u5e03\u7684\u4e2d\u6587\u77ed\u6587\u3002",
+    "\u8981\u6c42\uff1a",
+    "1. \u53ea\u8f93\u51fa JSON\uff0c\u4e14\u53ea\u5305\u542b title\u3001summary\u3001content\u3001tags\u3001sourceNote \u8fd9\u51e0\u4e2a\u5b57\u6bb5\u3002",
+    "2. summary \u5199\u6210 1 \u6bb5\u4e2d\u6587\u6458\u8981\uff0c60-120 \u5b57\uff0c\u660e\u786e\u8bf4\u660e\u4e3b\u9898\u3001\u5173\u952e\u4fe1\u606f\u548c\u5f71\u54cd\u3002",
+    "3. content \u5199\u6210\u4e2d\u6587\u77ed\u5185\u5bb9\uff0c250-500 \u5b57\uff0c\u53ef\u4ee5\u4f7f\u7528\u5c11\u91cf Markdown \u5c0f\u6807\u9898\u6216\u5217\u8868\u3002",
+    "4. content \u8981\u4f53\u73b0\uff1a\u53d1\u751f\u4e86\u4ec0\u4e48\u3001\u4e3a\u4ec0\u4e48\u91cd\u8981\u3001\u6709\u54ea\u4e9b\u5173\u952e\u7ec6\u8282\u6216\u9650\u5236\u3002",
+    "5. tags \u8fd4\u56de 3-5 \u4e2a\u7b80\u77ed\u6807\u7b7e\uff0c\u5c3d\u91cf\u4e0e\u4e3b\u9898\u3001\u6765\u6e90\u7c7b\u578b\u3001\u6280\u672f\u65b9\u5411\u76f8\u5173\u3002",
+    "6. sourceNote \u7528 1 \u53e5\u8bdd\u8bf4\u660e\u6765\u6e90\u548c\u53d1\u5e03\u524d\u9700\u8981\u6838\u5bf9\u7684\u70b9\u3002",
+    "7. \u4e0d\u8981\u52a0\u5165\u539f\u6587\u6ca1\u6709\u7684\u4fe1\u606f\uff0c\u4e0d\u8981\u62f7\u8d1d\u539f\u6587\u6574\u6bb5\u5185\u5bb9\u3002",
+    "",
+    `\u6765\u6e90\uff1a${input.sourceName}`,
+    `\u6765\u6e90\u7c7b\u578b\uff1a${input.sourceType}`,
+    `\u539f\u6807\u9898\uff1a${input.title}`,
+    `\u4f5c\u8005\uff1a${input.author || "\u672a\u77e5"}`,
+    `\u53d1\u5e03\u65f6\u95f4\uff1a${input.publishedAt || "\u672a\u77e5"}`,
+    `\u94fe\u63a5\uff1a${input.url}`,
+    `\u6293\u53d6\u6458\u8981\uff1a${input.summary || "\u65e0"}`,
+    `\u6293\u53d6\u7247\u6bb5\uff1a${sourceText || "\u65e0"}`
+  ].join("\n");
 
-  try {
-    return await fetch(url, {
-      ...init,
-      signal: controller.signal
-    });
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-function parseJsonObject(value: string) {
-  const cleaned = value
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("AI response is not a JSON object");
-  }
-
-  return JSON.parse(cleaned.slice(start, end + 1)) as Record<string, unknown>;
+  return [
+    {
+      role: "system",
+      content: "\u4f60\u662f\u5185\u5bb9\u7ad9\u7684\u4e2d\u6587\u7f16\u8f91\u52a9\u624b\u3002\u53ea\u80fd\u57fa\u4e8e\u63d0\u4f9b\u7684\u539f\u59cb\u6750\u6599\u5199\u4f5c\uff0c\u4e0d\u5f97\u7f16\u9020\u4e8b\u5b9e\u3002"
+    },
+    {
+      role: "user",
+      content: userPrompt
+    }
+  ];
 }
 
 function normalizeAiOutput(payload: Record<string, unknown>, input: AiContentInput, model: string): GeneratedArticleContent {
@@ -159,41 +148,8 @@ function normalizeAiOutput(payload: Record<string, unknown>, input: AiContentInp
   };
 }
 
-export function buildAiContentMessages(input: AiContentInput, articleText: string): Message[] {
-  const sourceText = truncate(articleText || input.contentSnippet || input.summary || "", MAX_INPUT_TEXT_LENGTH);
-
-  const systemPrompt =
-    "你是内容站的中文编辑助手。你只能基于提供的原始材料写作，不得编造事实。输出必须是合法 JSON，不要输出 Markdown 代码块。";
-
-  const userPrompt = [
-    "请基于下面的抓取内容，生成一条适合人工审核的中文短内容。",
-    "要求：",
-    "1. 只输出 JSON，且只包含 title、summary、content、tags、sourceNote 这几个字段。",
-    "2. summary 写成 1 段中文摘要，60-120 字，明确说明主题、关键信息和影响。",
-    "3. content 写成中文短内容，250-500 字，允许使用少量 Markdown 小标题或列表。",
-    "4. content 要体现：发生了什么、为什么重要、有哪些关键细节或限制。",
-    "5. tags 返回 3-5 个简短标签，尽量与主题、来源类型、技术方向相关。",
-    "6. sourceNote 用 1 句话说明来源和发布前需要核对的点。",
-    "7. 不要加入原文没有的信息，不要抄袭原文整段内容。",
-    "",
-    `来源：${input.sourceName}`,
-    `来源类型：${input.sourceType}`,
-    `原标题：${input.title}`,
-    `作者：${input.author || "未知"}`,
-    `发布时间：${input.publishedAt || "未知"}`,
-    `链接：${input.url}`,
-    `抓取摘要：${input.summary || "无"}`,
-    `抓取片段：${sourceText || "无"}`
-  ].join("\n");
-
-  return [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt }
-  ];
-}
-
 export async function generateShortChineseArticle(
-  bindings: AiContentBindings,
+  bindings: AiRuntimeEnv,
   input: AiContentInput
 ): Promise<GeneratedArticleContent> {
   const articleText = cleanText(input.articleText || "");
@@ -201,57 +157,35 @@ export async function generateShortChineseArticle(
     return buildNoArticleContent(input);
   }
 
-  if (!bindings.OPENAI_API_KEY || Date.now() < aiUnavailableUntil) {
+  const ai = resolveAiConfig(bindings, { defaultTimeoutMs: DEFAULT_TIMEOUT_MS });
+  if (!ai.apiKey) {
     return buildFallbackContent(input);
   }
 
-  const baseUrl = (bindings.OPENAI_BASE_URL || bindings.OPENAI_API_BASE || "https://api.openai.com/v1").replace(
-    /\/+$/,
-    ""
-  );
-  const model = bindings.OPENAI_MODEL || "gpt-4o-mini";
-  const timeoutMs = resolveTimeoutMs(bindings);
-  const messages = buildAiContentMessages(input, articleText);
+  const cooldownKey = makeAiCooldownKey({ provider: ai.provider, baseUrl: ai.baseUrl, model: ai.model });
+  if (isAiCoolingDown(cooldownKey)) {
+    return buildFallbackContent(input);
+  }
 
   try {
-    const response = await fetchWithTimeout(
-      `${baseUrl}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${bindings.OPENAI_API_KEY}`,
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          model,
-          temperature: 0.2,
-          response_format: { type: "json_object" },
-          messages
-        })
-      },
-      timeoutMs
-    );
+    const content = await callChatCompletion({
+      baseUrl: ai.baseUrl,
+      apiKey: ai.apiKey,
+      model: ai.model,
+      timeoutMs: ai.timeoutMs,
+      messages: buildMessages(input, articleText),
+      responseFormatJson: true
+    });
 
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(`AI content request failed: ${response.status} ${message}`);
-    }
-
-    const payload = (await response.json()) as {
-      choices?: Array<{
-        message?: {
-          content?: string;
-        };
-      }>;
-    };
-    
-    const content = payload.choices?.[0]?.message?.content || "";
-    return normalizeAiOutput(parseJsonObject(content), input, model);
+    return normalizeAiOutput(parseJsonObject(content), input, ai.model);
   } catch (error) {
-    aiUnavailableUntil = Date.now() + AI_COOLDOWN_MS;
+    markAiCoolingDown(cooldownKey);
     console.error("AI content generation failed, falling back to local draft", {
       message: error instanceof Error ? error.message : String(error),
-      timeoutMs,
+      provider: ai.provider,
+      baseUrl: ai.baseUrl,
+      model: ai.model,
+      timeoutMs: ai.timeoutMs,
       source: input.sourceName,
       title: input.title
     });

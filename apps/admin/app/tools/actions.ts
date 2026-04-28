@@ -23,7 +23,7 @@ export async function saveToolAction(formData: FormData) {
     featured: formData.has("featured")
   });
 
-  redirect(`/tools/${tool.slug}`);
+  redirect(`/tools/${encodeURIComponent(tool.slug)}`);
 }
 
 export async function deleteToolAction(formData: FormData) {

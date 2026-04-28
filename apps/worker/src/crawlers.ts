@@ -19,19 +19,29 @@ export type FetchedItem = {
 };
 
 function stripHtml(value: string) {
-  const stripped = value
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, " ");
+  let text = value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
+  
+  // Decode entities first so we can catch encoded tags like &lt;p&gt;
+  text = decodeHtmlEntities(text);
+  
+  // Remove script and style tags and their content
+  text = text.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ");
+  
+  // Remove all other tags
+  text = text.replace(/<[^>]+>/g, " ");
 
-  return decodeHtmlEntities(stripped).replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  return text.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function decodeXml(value: string) {
+  // CDATA is already handled in stripHtml
   return stripHtml(value);
 }
 
 function extractTag(block: string, tagName: string) {
-  const match = block.match(new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i"));
+  // Handle namespaced tags like content:encoded by escaping the colon in regex
+  const escapedTagName = tagName.replace(/:/g, "\\:");
+  const match = block.match(new RegExp(`<${escapedTagName}[^>]*>([\\s\\S]*?)<\\/${escapedTagName}>`, "i"));
   return match ? decodeXml(match[1]) : "";
 }
 
@@ -110,6 +120,7 @@ function parseRssItems(source: SourceInput, xml: string): FetchedItem[] {
 
     const description =
       extractTag(block, "description") ||
+      extractTag(block, "content:encoded") ||
       extractTag(block, "summary") ||
       extractTag(block, "content");
 
@@ -177,12 +188,18 @@ async function crawlProductHunt(source: SourceInput): Promise<FetchedItem[]> {
   return items.map((item) => {
     // Product Hunt titles are usually "Name - Slogan"
     const [name, ...sloganParts] = item.title.split(" - ");
-    const slogan = sloganParts.join(" - ");
+    const namePart = name?.trim() ?? "";
+    const slogan = sloganParts.join(" - ").trim();
+
+    // PH feed descriptions often end with "Discussion | Link"
+    const cleanSummary = (slogan || item.summary || "").replace(/\bDiscussion\s*\|\s*Link\b/gi, "").trim();
+    const cleanContent = (item.contentSnippet || "").replace(/\bDiscussion\s*\|\s*Link\b/gi, "").trim();
 
     return {
       ...item,
-      title: name.trim(),
-      summary: slogan || item.summary,
+      title: namePart || item.title,
+      summary: cleanSummary,
+      contentSnippet: cleanContent,
       author: "Product Hunt"
     };
   });

@@ -9,11 +9,23 @@ export function asBoolean(value: unknown) {
 }
 
 export function asArray(value: unknown) {
-  if (typeof value !== "string" || !value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).filter(Boolean);
+  }
+
+  if (typeof value !== "string" || !value.trim()) {
     return [] as string[];
   }
 
-  return JSON.parse(value) as string[];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)).filter(Boolean) : [];
+  } catch {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
 }
 
 export function truncate(value: string, maxLength: number) {

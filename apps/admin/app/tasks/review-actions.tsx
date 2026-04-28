@@ -70,7 +70,7 @@ export function ReviewActions({ review }: ReviewActionsProps) {
         <button type="button" className="button danger-button" onClick={openDialog}>
           打回修改
         </button>
-        {review.entityType === "post" && review.reviewStatus !== "approved" ? (
+        {review.reviewStatus !== "approved" ? (
           <button type="button" className="button danger-button" onClick={openDeleteDialog}>
             删除文章并允许重抓
           </button>

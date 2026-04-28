@@ -50,6 +50,7 @@ export type ToolPayload = {
 };
 
 export type SourcePayload = {
+  id?: string;
   name: string;
   slug?: string;
   type: string;
@@ -205,6 +206,13 @@ export async function listSources() {
 }
 
 export async function createSource(payload: SourcePayload) {
+  return apiFetch<SourceRecord>("/api/sources", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function saveSource(payload: SourcePayload) {
   return apiFetch<SourceRecord>("/api/sources", {
     method: "POST",
     body: payload

@@ -1,5 +1,6 @@
 import { listSources } from "@devtoollab/shared/api-client";
-import { createSourceAction, updateSourceStatusAction } from "./actions";
+import { saveSourceAction, updateSourceStatusAction } from "./actions";
+import { EditSourceDialog } from "./edit-source-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function SourcesPage() {
         </div>
       </div>
 
-      <form action={createSourceAction} className="editor-form">
+      <form action={saveSourceAction} className="editor-form">
         <div className="field-grid">
           <label className="field">
             <span>来源名称</span>
@@ -108,6 +109,7 @@ export default async function SourcesPage() {
                 {source.status === "active" ? "暂停" : "启用"}
               </button>
             </form>
+            <EditSourceDialog source={source} />
           </article>
         ))}
       </div>

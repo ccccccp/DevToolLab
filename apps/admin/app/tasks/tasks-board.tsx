@@ -24,6 +24,62 @@ import { ReviewActions } from "./review-actions";
 
 type ParsedCrawlLogPayload = Record<string, unknown> | null;
 
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("zh-CN");
+}
+
+function getTaskLastRunLabel(task: CrawlTaskRecord, source: SourceRecord | undefined) {
+  if (task.runMode !== "scheduled") {
+    return task.startedAt ? formatDateTime(task.startedAt) : "手动触发";
+  }
+
+  if (!source) {
+    return "未绑定来源";
+  }
+
+  if (!source.lastCrawledAt) {
+    return "暂无";
+  }
+
+  const lastRunMs = Date.parse(source.lastCrawledAt);
+  if (Number.isNaN(lastRunMs)) {
+    return "暂无";
+  }
+
+  return formatDateTime(source.lastCrawledAt);
+}
+
+function getTaskNextRunLabel(task: CrawlTaskRecord, source: SourceRecord | undefined) {
+  if (task.runMode !== "scheduled") {
+    return "手动任务";
+  }
+
+  if (!source) {
+    return "未绑定来源";
+  }
+
+  if (!source.enabled || source.status !== "active") {
+    return "来源未启用";
+  }
+
+  const intervalMinutes = Math.max(source.crawlIntervalMinutes || 0, 1);
+  if (!source.lastCrawledAt) {
+    return "待首次执行";
+  }
+
+  const lastRunMs = Date.parse(source.lastCrawledAt);
+  if (Number.isNaN(lastRunMs)) {
+    return "待重新计算";
+  }
+
+  const nextRunAt = new Date(lastRunMs + intervalMinutes * 60 * 1000);
+  if (nextRunAt.getTime() <= Date.now()) {
+    return `已到期，应于 ${formatDateTime(nextRunAt.toISOString())} 执行`;
+  }
+
+  return formatDateTime(nextRunAt.toISOString());
+}
+
 // --- Dialog Components ---
 
 function DialogLauncher({
@@ -455,6 +511,7 @@ export function TasksControl({ sources, tasks }: { sources: SourceRecord[]; task
   const [taskQuery, setTaskQuery] = useState("");
   const [taskStatus, setTaskStatus] = useState("all");
   const [taskSource, setTaskSource] = useState("all");
+  const sourceMap = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources]);
 
   const filteredTasks = useMemo(() => {
     const keyword = taskQuery.trim().toLowerCase();
@@ -520,8 +577,12 @@ export function TasksControl({ sources, tasks }: { sources: SourceRecord[]; task
               <p className="meta-line">类型：{getCrawlTaskTypeLabel(task.taskType)}</p>
               <p className="meta-line">模式：{getCrawlRunModeLabel(task.runMode)}</p>
               <p className="meta-line">抓取条数：{task.itemsFound}</p>
+              <p className="meta-line">上次执行时间：{getTaskLastRunLabel(task, task.sourceId ? sourceMap.get(task.sourceId) : undefined)}</p>
+              <p className={`meta-line ${task.runMode === "scheduled" ? "meta-line-strong" : ""}`}>
+                下次预计执行：{getTaskNextRunLabel(task, task.sourceId ? sourceMap.get(task.sourceId) : undefined)}
+              </p>
               {task.errorMessage ? <p className="meta-line">错误：{decodeHtmlEntities(task.errorMessage)}</p> : null}
-              <p className="meta-line">请求时间：{new Date(task.requestedAt).toLocaleString("zh-CN")}</p>
+              <p className="meta-line">请求时间：{formatDateTime(task.requestedAt)}</p>
               <div className="actions-row">
                 <TaskRunLogDialog task={task} />
                 {task.status !== "completed" ? (
@@ -768,10 +829,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
     });
   }, [reviewEntityType, reviewQuery, reviewStatus, reviews]);
 
-  const selectableReviewIds = useMemo(
-    () => filteredReviews.filter((review) => review.entityType === "post").map((review) => review.id),
-    [filteredReviews]
-  );
+  const selectableReviewIds = useMemo(() => filteredReviews.map((review) => review.id), [filteredReviews]);
   const selectedVisibleCount = selectedReviewIds.filter((id) => selectableReviewIds.includes(id)).length;
   const allVisibleSelected =
     selectableReviewIds.length > 0 && selectableReviewIds.every((id) => selectedReviewIds.includes(id));
@@ -858,7 +916,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
         {filteredReviews.length > 0 ? (
           filteredReviews.map((review) => (
             <article className="card compact-card" key={review.id}>
-              {review.entityType === "post" ? (
+              <>
                 <label className="review-select-control">
                   <input
                     type="checkbox"
@@ -867,7 +925,7 @@ export function ReviewQueueList({ reviews }: { reviews: ReviewQueueItem[] }) {
                   />
                   <span>选择</span>
                 </label>
-              ) : null}
+              </>
               <div className="badge-row">
                 <span className={`status ${review.reviewStatus}`}>{review.reviewStatus}</span>
                 <span className="status featured">{review.entityType}</span>

@@ -288,6 +288,135 @@ main {
   line-height: 1.8;
 }
 
+.markdown-content {
+  font-size: 16px;
+}
+
+.markdown-content > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  line-height: 1.25;
+  margin: 1.6em 0 0.6em;
+  color: var(--text);
+}
+
+.markdown-content h1 {
+  font-size: 2.1em;
+}
+
+.markdown-content h2 {
+  font-size: 1.7em;
+}
+
+.markdown-content h3 {
+  font-size: 1.35em;
+}
+
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol,
+.markdown-content blockquote,
+.markdown-content pre,
+.markdown-content table {
+  margin: 0.9em 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.4em;
+}
+
+.markdown-content li {
+  margin: 0.35em 0;
+}
+
+.markdown-content blockquote {
+  padding: 0.2em 1em;
+  border-left: 4px solid var(--accent);
+  background: rgba(200, 90, 46, 0.08);
+  color: var(--muted);
+  border-radius: 0 14px 14px 0;
+}
+
+.markdown-content code {
+  padding: 0.15em 0.42em;
+  border-radius: 8px;
+  background: rgba(31, 41, 55, 0.08);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.92em;
+}
+
+.markdown-content pre {
+  overflow-x: auto;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.markdown-content pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.95em;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+}
+
+.markdown-content th,
+.markdown-content td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-content th {
+  background: rgba(243, 237, 226, 0.9);
+}
+
+.markdown-content tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.2em 0;
+  border-radius: 16px;
+  border: 1px solid rgba(217, 209, 195, 0.85);
+}
+
+.markdown-content hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 1.8em 0;
+}
+
+.markdown-content a {
+  color: var(--accent-deep);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 .side-block h3 {
   margin: 12px 0;
 }

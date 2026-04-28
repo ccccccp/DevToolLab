@@ -4,20 +4,29 @@ import { randomUUID } from "node:crypto";
 import { ProxyAgent, setGlobalDispatcher } from "undici";
 
 const port = Number.parseInt(process.env.OPENAI_PROXY_PORT || "8788", 10);
-const upstreamBaseUrl = (process.env.OPENAI_UPSTREAM_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
+const upstreamBaseUrl = (process.env.OPENAI_UPSTREAM_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(
+  /\/+$/,
+  ""
+);
 const defaultApiKey = process.env.OPENAI_API_KEY || "";
 const PROXY_URL = process.env.OPENAI_CONNECTIVITY_PROXY || "";
 const responseDumpDir = new URL("../.openai-proxy-responses/", import.meta.url);
 
 if (PROXY_URL) {
   setGlobalDispatcher(new ProxyAgent(PROXY_URL));
+} else {
+  console.warn(
+    "No connectivity proxy configured. To enable, set the OPENAI_CONNECTIVITY_PROXY environment variable to the URL of your proxy server."
+  );
 }
+
+process.title = "ai-proxy";
 
 function logEvent(event, details = {}) {
   console.log(
     JSON.stringify({
       level: "info",
-      scope: "openai-proxy",
+      scope: "ai-proxy",
       event,
       timestamp: new Date().toISOString(),
       ...details
@@ -29,7 +38,7 @@ function logError(event, details = {}) {
   console.error(
     JSON.stringify({
       level: "error",
-      scope: "openai-proxy",
+      scope: "ai-proxy",
       event,
       timestamp: new Date().toISOString(),
       ...details
@@ -256,6 +265,8 @@ const server = http.createServer((request, response) => {
 server.listen(port, "127.0.0.1", () => {
   logEvent("server_started", {
     port,
+    PROXY_URL: PROXY_URL,
+    serverUrl: `http://127.0.0.1:${port}/`,
     upstreamBaseUrl,
     apiKeyConfigured: Boolean(defaultApiKey)
   });

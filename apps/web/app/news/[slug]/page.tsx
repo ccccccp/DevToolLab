@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPostBySlug, listTools } from "@devtoollab/shared/api-client";
+import { MarkdownContent } from "../../../components/markdown-content";
 
 type NewsDetailProps = {
   params: Promise<{
@@ -39,9 +40,7 @@ export default async function NewsDetailPage({ params }: NewsDetailProps) {
             </span>
           ))}
         </div>
-        <div className="rich-content" style={{ whiteSpace: "pre-wrap" }}>
-          {post.content}
-        </div>
+        <MarkdownContent content={post.content} className="rich-content" />
       </article>
 
       <aside className="detail-side stack">
