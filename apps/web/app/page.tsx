@@ -1,12 +1,29 @@
 import Link from "next/link";
+import type { PostRecord, ToolRecord } from "@devtoollab/shared";
 import { pipelineStages, siteMeta } from "@devtoollab/shared";
 import { listPosts, listTools } from "@devtoollab/shared/api-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const posts = await listPosts("published");
-  const tools = await listTools("published");
+  const apiBaseUrl = process.env.DEVTOOLLAB_API_BASE_URL?.trim() || "";
+
+  let posts: PostRecord[] = [];
+  let tools: ToolRecord[] = [];
+
+  try {
+    [posts, tools] = await Promise.all([listPosts("published"), listTools("published")]);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        scope: "web-home",
+        event: "ssr_fetch_failed",
+        apiBaseUrl,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    );
+  }
+
   const heroPost = posts.find((post) => post.featured) ?? posts[0];
   const featuredTools = tools.filter((tool) => tool.featured).slice(0, 3);
   const latestPosts = posts.slice(0, 4);
@@ -95,7 +112,7 @@ export default async function HomePage() {
               <p className="meta">{post.summary}</p>
               <div className="meta-line">{new Date(post.publishedAt ?? post.updatedAt).toLocaleDateString("zh-CN")}</div>
               <div>
-                {post.tags.map((tag) => (
+                {post.tags.map((tag: string) => (
                   <span key={tag} className="tag">
                     {tag}
                   </span>
@@ -130,7 +147,7 @@ export default async function HomePage() {
               <p className="meta">{tool.summary}</p>
               <div className="meta-line">{tool.category}</div>
               <div>
-                {tool.tags.map((tag) => (
+                {tool.tags.map((tag: string) => (
                   <span key={tag} className="tag">
                     {tag}
                   </span>

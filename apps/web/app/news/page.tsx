@@ -1,10 +1,25 @@
 import Link from "next/link";
+import type { PostRecord } from "@devtoollab/shared";
 import { listPosts } from "@devtoollab/shared/api-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewsPage() {
-  const posts = await listPosts("published");
+  const apiBaseUrl = process.env.DEVTOOLLAB_API_BASE_URL?.trim() || "";
+  let posts: PostRecord[] = [];
+
+  try {
+    posts = await listPosts("published");
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        scope: "web-news",
+        event: "ssr_fetch_failed",
+        apiBaseUrl,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    );
+  }
 
   return (
     <section className="list-page section">
@@ -28,7 +43,7 @@ export default async function NewsPage() {
               发布时间：{new Date(post.publishedAt ?? post.updatedAt).toLocaleString("zh-CN")}
             </div>
             <div>
-              {post.tags.map((tag) => (
+              {post.tags.map((tag: string) => (
                 <span key={tag} className="tag">
                   {tag}
                 </span>

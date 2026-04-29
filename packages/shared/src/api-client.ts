@@ -19,6 +19,12 @@ type RequestOptions = {
   body?: unknown;
 };
 
+function logApiDebug(event: string, details: Record<string, unknown>) {
+  if (typeof console !== "undefined" && typeof console.info === "function") {
+    console.info(JSON.stringify({ scope: "api-client", event, ...details }));
+  }
+}
+
 export type PostPayload = {
   id?: string;
   currentSlug?: string;
@@ -145,6 +151,11 @@ async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<
   let response: Response;
   const endRequest = beginRequest();
   const workerApiSecret = getWorkerApiSecret();
+  logApiDebug("request_start", {
+    url,
+    method: options?.method ?? "GET",
+    hasWorkerSecret: Boolean(workerApiSecret)
+  });
 
   try {
     response = await fetch(url, {

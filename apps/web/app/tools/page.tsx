@@ -1,10 +1,25 @@
 import Link from "next/link";
+import type { ToolRecord } from "@devtoollab/shared";
 import { listTools } from "@devtoollab/shared/api-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function ToolsPage() {
-  const tools = await listTools("published");
+  const apiBaseUrl = process.env.DEVTOOLLAB_API_BASE_URL?.trim() || "";
+  let tools: ToolRecord[] = [];
+
+  try {
+    tools = await listTools("published");
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        scope: "web-tools",
+        event: "ssr_fetch_failed",
+        apiBaseUrl,
+        error: error instanceof Error ? error.message : String(error)
+      })
+    );
+  }
 
   return (
     <section className="list-page section">
@@ -26,7 +41,7 @@ export default async function ToolsPage() {
             <p className="meta">{tool.summary}</p>
             <div className="meta-line">分类：{tool.category}</div>
             <div>
-              {tool.tags.map((tag) => (
+              {tool.tags.map((tag: string) => (
                 <span key={tag} className="tag">
                   {tag}
                 </span>
