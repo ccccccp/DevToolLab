@@ -9,8 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test:openai-connectivity": "node --env-file-if-exists=.env.local --experimental-strip-types ./tests/openai-connectivity.smoke.ts",
     "test:openai-article": "node --env-file-if-exists=.env.local --experimental-strip-types ./tests/openai-article-crawl.smoke.ts",
-    "db:migrate:local": "wrangler d1 migrations apply devtoollab --local",
-    "db:seed:local": "wrangler d1 execute devtoollab --local --file ./seed.sql"
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply devtoollab-prod --remote",
+    "db:seed:local": "wrangler d1 execute DB --local --file ./seed.sql"
   },
   "dependencies": {
     "@devtoollab/shared": "file:../../packages/shared",
