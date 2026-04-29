@@ -17,8 +17,10 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.4",
     "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2"
+    "@types/react-dom": "^19.1.2",
+    "wrangler": "^4.12.0"
   }
 }
