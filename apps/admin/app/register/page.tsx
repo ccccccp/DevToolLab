@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { listAdminUsers } from "@devtoollab/shared/api-client";
+import { getAdminBootstrapStatus } from "@devtoollab/shared/api-client";
 import { getCurrentAdminSession } from "../../lib/server-session";
 import { registerAction } from "./actions";
 
@@ -19,9 +19,9 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   }
 
   const { error } = await searchParams;
-  const users = await listAdminUsers();
+  const status = await getAdminBootstrapStatus().catch(() => null);
 
-  if (users.length > 0) {
+  if (status && !status.bootstrapAvailable) {
     return (
       <section className="auth-shell">
         <article className="card auth-card">
@@ -43,7 +43,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       <article className="card auth-card">
         <span className="eyebrow">First Admin</span>
         <h1>创建首个后台账号</h1>
-        <p className="muted">首次使用时先创建一个管理员账号，之后可在用户管理页继续添加成员。</p>
+        <p className="muted">首次使用时先创建一个管理员账号，之后可以在用户管理页继续添加成员。</p>
 
         {error ? <p className="auth-alert">{error}</p> : null}
 
@@ -58,7 +58,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           </label>
           <label className="field">
             <span>密码</span>
-            <input type="password" name="password" required placeholder="至少 8 位" minLength={8} />
+            <input type="password" name="password" required minLength={8} placeholder="至少 8 位" />
           </label>
           <div className="actions-row">
             <button type="submit" className="button primary-button">

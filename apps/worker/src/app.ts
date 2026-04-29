@@ -47,7 +47,11 @@ const CRAWL_ITEM_LIST_SQL = `SELECT crawl_items.*, sources.name AS source_name
   LEFT JOIN sources ON sources.id = crawl_items.source_id
   ORDER BY fetched_at DESC`;
 
-const OPEN_ADMIN_AUTH_PATHS = new Set(["/api/admin/auth/login", "/api/admin/auth/bootstrap"]);
+const OPEN_ADMIN_AUTH_PATHS = new Set([
+  "/api/admin/auth/login",
+  "/api/admin/auth/bootstrap",
+  "/api/admin/auth/bootstrap-status"
+]);
 
 let hasLoggedRuntimeEnv = false;
 
@@ -167,6 +171,16 @@ export function createApp() {
     }
 
     return c.json({ user });
+  });
+
+  app.get("/api/admin/auth/bootstrap-status", async (c) => {
+    const row = await first<{ total: number }>(c.env.DB, "SELECT COUNT(*) AS total FROM admin_users");
+    const total = Number(row?.total ?? 0);
+
+    return c.json({
+      bootstrapAvailable: total === 0,
+      userCount: total
+    });
   });
 
   app.post("/api/admin/users", async (c) => {

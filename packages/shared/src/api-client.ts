@@ -368,6 +368,13 @@ export async function bootstrapAdminUser(payload: AdminUserPayload) {
   });
 }
 
+export async function getAdminBootstrapStatus() {
+  return apiFetch<{
+    bootstrapAvailable: boolean;
+    userCount: number;
+  }>("/api/admin/auth/bootstrap-status");
+}
+
 export async function createAdminUser(payload: AdminUserPayload) {
   return apiFetch<AdminUserRecord>("/api/admin/users", {
     method: "POST",

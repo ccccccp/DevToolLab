@@ -17,6 +17,8 @@
     "deploy:admin": "npm run deploy -w @devtoollab/admin",
     "db:migrate:local": "npm run db:migrate:local -w @devtoollab/worker",
     "db:seed:local": "npm run db:seed:local -w @devtoollab/worker",
+    "gen:secret": "node ./scripts/gen-secret.mjs",
+    "gen:secrets": "node ./scripts/gen-secret.mjs --count 2",
     "test:worker:openai-connectivity": "npm run test:openai-connectivity -w @devtoollab/worker",
     "test:worker:openai-article": "npm run test:openai-article -w @devtoollab/worker",
     "build": "npm run build --workspaces --if-present",
