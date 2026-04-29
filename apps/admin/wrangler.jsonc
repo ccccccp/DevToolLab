@@ -10,6 +10,10 @@
   },
   "services": [
     {
+      "binding": "WORKER_API",
+      "service": "devtoollab-worker"
+    },
+    {
       "binding": "WORKER_SELF_REFERENCE",
       "service": "devtoollab-admin"
     }
