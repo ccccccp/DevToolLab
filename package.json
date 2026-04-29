@@ -11,6 +11,10 @@
     "dev:admin": "npm run dev -w @devtoollab/admin",
     "dev:worker": "npm run dev -w @devtoollab/worker",
     "dev:openai-proxy": "npm run dev:openai-proxy -w @devtoollab/worker",
+    "preview:web": "npm run preview -w @devtoollab/web",
+    "preview:admin": "npm run preview -w @devtoollab/admin",
+    "deploy:web": "npm run deploy -w @devtoollab/web",
+    "deploy:admin": "npm run deploy -w @devtoollab/admin",
     "db:migrate:local": "npm run db:migrate:local -w @devtoollab/worker",
     "db:seed:local": "npm run db:seed:local -w @devtoollab/worker",
     "test:worker:openai-connectivity": "npm run test:openai-connectivity -w @devtoollab/worker",
@@ -19,6 +23,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.4",
     "typescript": "^5.8.3"
   },
   "dependencies": {
