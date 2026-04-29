@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPostBySlug, listTools } from "@devtoollab/shared/api-client";
+import { getPostById, getPostBySlug, listTools } from "@devtoollab/shared/api-client";
 import { MarkdownContent } from "../../../components/markdown-content";
 
 type NewsDetailProps = {
@@ -12,8 +12,8 @@ type NewsDetailProps = {
 export const dynamic = "force-dynamic";
 
 export default async function NewsDetailPage({ params }: NewsDetailProps) {
-  const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const { slug: identifier } = await params;
+  const post = (await getPostById(identifier)) ?? (await getPostBySlug(identifier));
 
   if (!post || post.status !== "published") {
     notFound();
@@ -47,7 +47,7 @@ export default async function NewsDetailPage({ params }: NewsDetailProps) {
         <article className="panel side-block">
           <span className="eyebrow">来源信息</span>
           <h3>原文入口</h3>
-          <p className="meta">发布前保留来源和核验说明，能让内容质量和可追溯性更稳。</p>
+          <p className="meta">发布前保留来源和核验说明，便于后续追溯。</p>
           {post.sourceNote ? <p className="meta">{post.sourceNote}</p> : null}
           <a href={post.sourceUrl} target="_blank" rel="noreferrer" className="button secondary">
             打开原文
@@ -71,7 +71,7 @@ export default async function NewsDetailPage({ params }: NewsDetailProps) {
               ))}
             </div>
           ) : (
-            <p className="meta">暂未关联工具。</p>
+            <p className="meta">暂无关联工具。</p>
           )}
         </article>
       </aside>

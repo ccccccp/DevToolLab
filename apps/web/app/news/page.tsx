@@ -17,7 +17,7 @@ export default async function NewsPage() {
       </div>
       <div className="grid">
         {posts.map((post) => (
-          <article key={post.slug} className="card">
+          <article key={post.id} className="card">
             <div className="card-head">
               <span className="eyebrow">{post.category}</span>
               {post.featured ? <span className="tag strong-tag">推荐</span> : null}
@@ -35,7 +35,7 @@ export default async function NewsPage() {
               ))}
             </div>
             <div className="cta-row">
-              <Link href={`/news/${post.slug}`} className="button secondary">
+              <Link href={`/news/${post.id}`} className="button secondary">
                 打开文章
               </Link>
             </div>

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getPostBySlug } from "@devtoollab/shared/api-client";
+import { getPostById, getPostBySlug } from "@devtoollab/shared/api-client";
 import { deletePostAction, savePostAction } from "../actions";
 
 type PostEditorPageProps = {
@@ -11,8 +11,8 @@ type PostEditorPageProps = {
 export const dynamic = "force-dynamic";
 
 export default async function PostEditorPage({ params }: PostEditorPageProps) {
-  const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const { slug: identifier } = await params;
+  const post = (await getPostById(identifier)) ?? (await getPostBySlug(identifier));
 
   if (!post) {
     notFound();
@@ -24,11 +24,14 @@ export default async function PostEditorPage({ params }: PostEditorPageProps) {
         <div>
           <span className="eyebrow">编辑文章</span>
           <h1>{post.title}</h1>
-          <p className="muted">发布前可以在这里修改标题、摘要、标签和来源说明，保存后审核队列会同步最新信息。</p>
+          <p className="muted">
+            文章使用不可变 ID 作为入口，slug 只负责展示和兼容老链接。保存后审核队列会同步最新信息。
+          </p>
         </div>
       </div>
 
       <form action={savePostAction} className="editor-form">
+        <input type="hidden" name="currentId" value={post.id} />
         <input type="hidden" name="currentSlug" value={post.slug} />
 
         <div className="field-grid">
@@ -116,14 +119,14 @@ export default async function PostEditorPage({ params }: PostEditorPageProps) {
 
       {post.status !== "published" ? (
         <form action={deletePostAction} className="danger-form">
-          <input type="hidden" name="slug" value={post.slug} />
+          <input type="hidden" name="id" value={post.id} />
           <button type="submit" className="button danger-button">
             删除文章
           </button>
         </form>
       ) : (
         <p className="muted" style={{ marginTop: "24px" }}>
-          提示：已发布的文章不允许直接删除。如果确实需要删除，请先将状态改为“草稿”并保存。
+          提示：已发布的文章不允许直接删除。如果确实需要删除，请先将状态改为草稿并保存。
         </p>
       )}
     </section>

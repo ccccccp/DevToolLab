@@ -21,17 +21,23 @@ export default async function AdminHomePage() {
         <article className="card stat-card">
           <span className="eyebrow">Posts</span>
           <strong>{stats.posts}</strong>
-          <p className="muted">{stats.publishedPosts} 已发布 / {stats.draftPosts} 草稿</p>
+          <p className="muted">
+            {stats.publishedPosts} 已发布 / {stats.draftPosts} 草稿
+          </p>
         </article>
         <article className="card stat-card">
           <span className="eyebrow">Tools</span>
           <strong>{stats.tools}</strong>
-          <p className="muted">{stats.publishedTools} 已发布 / {stats.featuredTools} 推荐</p>
+          <p className="muted">
+            {stats.publishedTools} 已发布 / {stats.featuredTools} 推荐
+          </p>
         </article>
         <article className="card stat-card">
           <span className="eyebrow">Ops</span>
           <strong>{stats.sources}</strong>
-          <p className="muted">{stats.activeSources} 活跃来源 / {stats.pendingReviews} 待审核</p>
+          <p className="muted">
+            {stats.activeSources} 活跃来源 / {stats.pendingReviews} 待审核
+          </p>
         </article>
         <article className="card stat-card">
           <span className="eyebrow">Pipeline</span>
@@ -67,12 +73,14 @@ export default async function AdminHomePage() {
           {recentPosts.map((post) => (
             <article className="card compact-card" key={post.id}>
               <div className="badge-row">
-                <span className={`status ${post.status}`}>{post.status === "published" ? "已发布" : "草稿"}</span>
+                <span className={`status ${post.status}`}>
+                  {post.status === "published" ? "已发布" : "草稿"}
+                </span>
                 {post.featured ? <span className="status featured">推荐</span> : null}
               </div>
               <h3>{post.title}</h3>
               <p className="muted">{post.summary}</p>
-              <Link href={`/posts/${post.slug}`} className="text-link">
+              <Link href={`/posts/${post.id}`} className="text-link">
                 编辑内容
               </Link>
             </article>
@@ -94,7 +102,9 @@ export default async function AdminHomePage() {
           {recentTools.map((tool) => (
             <article className="card compact-card" key={tool.id}>
               <div className="badge-row">
-                <span className={`status ${tool.status}`}>{tool.status === "published" ? "已发布" : "草稿"}</span>
+                <span className={`status ${tool.status}`}>
+                  {tool.status === "published" ? "已发布" : "草稿"}
+                </span>
                 {tool.featured ? <span className="status featured">推荐</span> : null}
               </div>
               <h3>{tool.name}</h3>

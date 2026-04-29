@@ -1,15 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { deletePost, savePost, splitTags } from "@devtoollab/shared/api-client";
+import { deletePostById, savePost, splitTags } from "@devtoollab/shared/api-client";
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
 export async function savePostAction(formData: FormData) {
+  const currentId = text(formData, "currentId") || undefined;
   const slug = text(formData, "slug");
   const post = await savePost({
+    id: currentId,
     currentSlug: text(formData, "currentSlug") || undefined,
     slug: slug || undefined,
     title: text(formData, "title"),
@@ -27,10 +29,10 @@ export async function savePostAction(formData: FormData) {
     featured: formData.has("featured")
   });
 
-  redirect(`/posts/${encodeURIComponent(post.slug)}`);
+  redirect(`/posts/${encodeURIComponent(post.id)}`);
 }
 
 export async function deletePostAction(formData: FormData) {
-  await deletePost(text(formData, "slug"));
+  await deletePostById(text(formData, "id"));
   redirect("/posts");
 }

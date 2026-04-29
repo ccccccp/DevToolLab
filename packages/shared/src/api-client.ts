@@ -1,5 +1,7 @@
 import { toast } from "./toast";
+import { beginRequest } from "./request-progress";
 import type {
+  AdminUserRecord,
   CrawlItemRecord,
   CrawlLogRecord,
   CrawlRunMode,
@@ -18,7 +20,9 @@ type RequestOptions = {
 };
 
 export type PostPayload = {
+  id?: string;
   currentSlug?: string;
+  currentId?: string;
   slug?: string;
   title: string;
   summary: string;
@@ -84,6 +88,19 @@ export type ReviewPayload = {
   priority: number;
 };
 
+export type AdminAuthPayload = {
+  email: string;
+  password: string;
+};
+
+export type AdminUserPayload = {
+  email: string;
+  displayName: string;
+  password: string;
+  role: AdminUserRecord["role"];
+  status: AdminUserRecord["status"];
+};
+
 declare global {
   interface Window {
     __DEVTOOLLAB_API_BASE_URL__?: string;
@@ -109,15 +126,32 @@ function getApiBaseUrl() {
   return (windowBaseUrl || processBaseUrl || fallbackBaseUrl).replace(/\/+$/, "");
 }
 
+function getWorkerApiSecret() {
+  return (
+    typeof globalThis !== "undefined"
+      ? (globalThis as typeof globalThis & {
+          process?: {
+            env?: {
+              DEVTOOLLAB_WORKER_API_SECRET?: string;
+            };
+          };
+        }).process?.env?.DEVTOOLLAB_WORKER_API_SECRET
+      : undefined
+  )?.trim();
+}
+
 async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<T> {
   const url = new URL(pathname, `${getApiBaseUrl()}/`).toString();
   let response: Response;
+  const endRequest = beginRequest();
+  const workerApiSecret = getWorkerApiSecret();
 
   try {
     response = await fetch(url, {
       method: options?.method ?? "GET",
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
+        ...(workerApiSecret ? { "x-devtoollab-worker-secret": workerApiSecret } : {})
       },
       body: options?.body ? JSON.stringify(options.body) : undefined,
       cache: "no-store"
@@ -130,7 +164,7 @@ async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<
     if (typeof window !== "undefined") {
       toast.error(message);
     }
-    
+    endRequest();
     throw new Error(message);
   }
 
@@ -141,10 +175,11 @@ async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<
     if (typeof window !== "undefined") {
       toast.error(errorMsg);
     }
-    
+    endRequest();
     throw new Error(errorMsg);
   }
 
+  endRequest();
   return (await response.json()) as T;
 }
 
@@ -167,6 +202,10 @@ export async function getPostBySlug(slug: string) {
   return apiFetch<PostRecord | null>(`/api/posts/${slug}`);
 }
 
+export async function getPostById(id: string) {
+  return apiFetch<PostRecord | null>(`/api/posts/id/${id}`);
+}
+
 export async function savePost(payload: PostPayload) {
   return apiFetch<PostRecord>("/api/posts", {
     method: "POST",
@@ -176,6 +215,12 @@ export async function savePost(payload: PostPayload) {
 
 export async function deletePost(slug: string) {
   return apiFetch<{ ok: true }>(`/api/posts/${slug}`, {
+    method: "DELETE"
+  });
+}
+
+export async function deletePostById(id: string) {
+  return apiFetch<{ ok: true }>(`/api/posts/id/${id}`, {
     method: "DELETE"
   });
 }
@@ -287,5 +332,55 @@ export async function updateReviewStatus(
 export async function deleteReviewItem(id: string) {
   return apiFetch<{ ok: true }>(`/api/reviews/${id}`, {
     method: "DELETE"
+  });
+}
+
+export async function listAdminUsers() {
+  return apiFetch<AdminUserRecord[]>("/api/admin/users");
+}
+
+export async function getAdminUserById(id: string) {
+  return apiFetch<AdminUserRecord | null>(`/api/admin/users/${id}`);
+}
+
+export async function loginAdminUser(payload: AdminAuthPayload) {
+  return apiFetch<{ user: AdminUserRecord }>("/api/admin/auth/login", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function bootstrapAdminUser(payload: AdminUserPayload) {
+  return apiFetch<{ user: AdminUserRecord }>("/api/admin/auth/bootstrap", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function createAdminUser(payload: AdminUserPayload) {
+  return apiFetch<AdminUserRecord>("/api/admin/users", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function updateAdminUserStatus(id: string, status: AdminUserRecord["status"]) {
+  return apiFetch<AdminUserRecord>(`/api/admin/users/${id}/status`, {
+    method: "POST",
+    body: { status }
+  });
+}
+
+export async function updateAdminUserPassword(id: string, password: string) {
+  return apiFetch<AdminUserRecord>(`/api/admin/users/${id}/password`, {
+    method: "POST",
+    body: { password }
+  });
+}
+
+export async function updateAdminUserDisplayName(id: string, displayName: string) {
+  return apiFetch<AdminUserRecord>(`/api/admin/users/${id}/profile`, {
+    method: "POST",
+    body: { displayName }
   });
 }

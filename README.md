@@ -94,3 +94,12 @@ npx wrangler secret put OPENAI_API_KEY
 - 先保持单仓，不拆独立 UI 仓库
 - 先做最小可运行骨架，再补业务功能
 - Worker 先承接 API 与流水线入口，复杂异步能力后续再加
+## Admin 鉴权
+
+`apps/admin` 现在带有一个最小登录/注册系统，只保护后台页面，不影响前台网站。
+
+- 首次使用先访问 `/register` 创建第一个管理员。
+- 之后通过 `/login` 登录。
+- 管理员可在 `/users` 管理后台账号、禁用用户和重置密码。
+- 普通后台用户只能访问 `/account` 修改自己的密码。
+- 需要配置 `ADMIN_SESSION_SECRET`，用于签名后台会话 Cookie。

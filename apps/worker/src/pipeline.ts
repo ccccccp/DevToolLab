@@ -267,7 +267,7 @@ async function upsertDraftPostFromItem(
       source.name,
       normalizedUrl,
       sourceNote,
-      "Auto-created from crawler. Review before publishing.",
+      "无",
       timestamp,
       timestamp
     ]

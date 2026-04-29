@@ -23,27 +23,11 @@ export function ReviewActions({ review }: ReviewActionsProps) {
   const decodedTitle = decodeHtmlEntities(review.title);
   const decodedEditorNote = decodeHtmlEntities(review.editorNote);
 
-  function openDialog() {
-    dialogRef.current?.showModal();
-  }
-
-  function closeDialog() {
-    dialogRef.current?.close();
-  }
-
-  function openDeleteDialog() {
-    deleteDialogRef.current?.showModal();
-  }
-
-  function closeDeleteDialog() {
-    deleteDialogRef.current?.close();
-  }
-
   return (
     <>
       <div className="actions-row">
         {review.entityType === "post" ? (
-          <Link href={`/posts/${review.entitySlug}`} className="button">
+          <Link href={`/posts/${review.entityId}`} className="button">
             编辑草稿
           </Link>
         ) : null}
@@ -67,11 +51,15 @@ export function ReviewActions({ review }: ReviewActionsProps) {
             </button>
           </form>
         ) : null}
-        <button type="button" className="button danger-button" onClick={openDialog}>
+        <button type="button" className="button danger-button" onClick={() => dialogRef.current?.showModal()}>
           打回修改
         </button>
         {review.reviewStatus !== "approved" ? (
-          <button type="button" className="button danger-button" onClick={openDeleteDialog}>
+          <button
+            type="button"
+            className="button danger-button"
+            onClick={() => deleteDialogRef.current?.showModal()}
+          >
             删除文章并允许重抓
           </button>
         ) : null}
@@ -87,12 +75,12 @@ export function ReviewActions({ review }: ReviewActionsProps) {
               <p className="eyebrow">审核反馈</p>
               <h3>{decodedTitle}</h3>
             </div>
-            <button type="button" className="dialog-close" onClick={closeDialog} aria-label="关闭弹框">
+            <button type="button" className="dialog-close" onClick={() => dialogRef.current?.close()} aria-label="关闭">
               ×
             </button>
           </div>
 
-          <p className="muted">填写明确的打回原因后提交，系统会把这段反馈回填到文章编辑页的“审核反馈”字段。</p>
+          <p className="muted">填写清楚的打回原因后再提交，系统会把这段反馈回填到文章编辑页。</p>
 
           <label className="field">
             <span>打回原因</span>
@@ -109,7 +97,7 @@ export function ReviewActions({ review }: ReviewActionsProps) {
             <button type="submit" className="button danger-button">
               提交打回
             </button>
-            <button type="button" className="button" onClick={closeDialog}>
+            <button type="button" className="button" onClick={() => dialogRef.current?.close()}>
               取消
             </button>
           </div>
@@ -122,10 +110,15 @@ export function ReviewActions({ review }: ReviewActionsProps) {
 
           <div className="review-dialog-header">
             <div>
-              <p className="eyebrow">删除审核文章</p>
+              <p className="eyebrow">删除审核记录</p>
               <h3>{decodedTitle}</h3>
             </div>
-            <button type="button" className="dialog-close" onClick={closeDeleteDialog} aria-label="关闭弹框">
+            <button
+              type="button"
+              className="dialog-close"
+              onClick={() => deleteDialogRef.current?.close()}
+              aria-label="关闭"
+            >
               ×
             </button>
           </div>
@@ -138,7 +131,7 @@ export function ReviewActions({ review }: ReviewActionsProps) {
             <button type="submit" className="button danger-button">
               确认删除并允许重抓
             </button>
-            <button type="button" className="button" onClick={closeDeleteDialog}>
+            <button type="button" className="button" onClick={() => deleteDialogRef.current?.close()}>
               取消
             </button>
           </div>

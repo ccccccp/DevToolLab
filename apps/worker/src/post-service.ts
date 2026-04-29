@@ -1,8 +1,8 @@
-import type { PostRecord } from "@devtoollab/shared";
+﻿import type { PostRecord } from "@devtoollab/shared";
 import { exec, first, makeId, nowIso, run, slugify, uniqueSlug } from "./db";
 import type { SqlRow } from "./types";
 
-type SavePostPayload = Partial<PostRecord> & { currentSlug?: string };
+type SavePostPayload = Partial<PostRecord> & { currentId?: string; currentSlug?: string };
 
 async function getTableColumns(db: D1Database, tableName: string) {
   const rows = await run<SqlRow>(db, `PRAGMA table_info(${tableName})`);
@@ -77,7 +77,9 @@ async function syncReviewQueueForPost(
 
 export async function savePost(db: D1Database, payload: SavePostPayload) {
   const timestamp = nowIso();
-  const current = payload.currentSlug
+  const current = payload.currentId
+    ? await first<SqlRow>(db, "SELECT * FROM posts WHERE id = ?", [payload.currentId])
+    : payload.currentSlug
     ? await first<SqlRow>(db, "SELECT * FROM posts WHERE slug = ?", [payload.currentSlug])
     : null;
   const postColumns = await getTableColumns(db, "posts");
@@ -90,7 +92,7 @@ export async function savePost(db: D1Database, payload: SavePostPayload) {
     slugify(payload.slug || payload.title || ""),
     current ? String(current.slug) : undefined
   );
-  const id = current ? String(current.id) : makeId("post");
+  const id = current ? String(current.id) : payload.id ? String(payload.id) : makeId("post");
   const status = payload.status === "published" ? "published" : "draft";
   const publishedAt = status === "published" ? (current?.published_at ? String(current.published_at) : timestamp) : null;
   const insertColumns = [
@@ -204,6 +206,10 @@ export async function savePost(db: D1Database, payload: SavePostPayload) {
   return first<SqlRow>(db, "SELECT * FROM posts WHERE id = ?", [id]);
 }
 
+export async function getPostById(db: D1Database, id: string) {
+  return first<SqlRow>(db, "SELECT * FROM posts WHERE id = ?", [id]);
+}
+
 export async function deletePostBySlug(db: D1Database, slug: string) {
   const post = await first<SqlRow>(db, "SELECT status FROM posts WHERE slug = ?", [slug]);
 
@@ -215,10 +221,30 @@ export async function deletePostBySlug(db: D1Database, slug: string) {
     return {
       ok: false as const,
       status: 400,
-      error: "已发布的文章不允许删除，请先撤回为草稿状态。"
+      error: "已发布的文章不允许直接删除，请先撤回到草稿状态。"
     };
   }
 
   await exec(db, "DELETE FROM posts WHERE slug = ?", [slug]);
   return { ok: true as const };
 }
+
+export async function deletePostById(db: D1Database, id: string) {
+  const post = await first<SqlRow>(db, "SELECT status FROM posts WHERE id = ?", [id]);
+
+  if (!post) {
+    return { ok: true as const };
+  }
+
+  if (String(post.status) === "published") {
+    return {
+      ok: false as const,
+      status: 400,
+      error: "已发布的文章不允许直接删除，请先撤回到草稿状态。"
+    };
+  }
+
+  await exec(db, "DELETE FROM posts WHERE id = ?", [id]);
+  return { ok: true as const };
+}
+

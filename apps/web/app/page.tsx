@@ -24,7 +24,7 @@ export default async function HomePage() {
           {heroPost ? (
             <div className="feature-strip">
               <span className="feature-label">今日推荐</span>
-              <Link href={`/news/${heroPost.slug}`}>{heroPost.title}</Link>
+              <Link href={`/news/${heroPost.id}`}>{heroPost.title}</Link>
             </div>
           ) : null}
           <div className="cta-row">
@@ -89,7 +89,7 @@ export default async function HomePage() {
         </div>
         <div className="grid">
           {latestPosts.map((post) => (
-            <article key={post.slug} className="card">
+            <article key={post.id} className="card">
               <span className="eyebrow">{post.category}</span>
               <h3>{post.title}</h3>
               <p className="meta">{post.summary}</p>
@@ -102,7 +102,7 @@ export default async function HomePage() {
                 ))}
               </div>
               <div className="cta-row">
-                <Link href={`/news/${post.slug}`} className="button secondary">
+                <Link href={`/news/${post.id}`} className="button secondary">
                   阅读文章
                 </Link>
               </div>

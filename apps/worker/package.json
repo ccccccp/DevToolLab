@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node --env-file-if-exists=.env.local ../../node_modules/wrangler/bin/wrangler.js dev --port 8787",
+    "dev": "node --env-file-if-exists=.env.local ../../node_modules/wrangler/bin/wrangler.js dev --port 8787 --test-scheduled",
     "dev:openai-proxy": "node --env-file-if-exists=.env.local ./scripts/openai-proxy.mjs",
     "build": "wrangler deploy --dry-run",
     "typecheck": "tsc --noEmit",

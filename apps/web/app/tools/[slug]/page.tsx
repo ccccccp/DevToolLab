@@ -54,7 +54,7 @@ export default async function ToolDetailPage({ params }: ToolDetailProps) {
         </article>
 
         <article className="panel side-block">
-          <span className="eyebrow">适合承接</span>
+          <span className="eyebrow">适合人群</span>
           <p className="meta">这类工具页后续可以继续扩展截图、优缺点、适用人群和对比模块。</p>
         </article>
 
@@ -63,14 +63,14 @@ export default async function ToolDetailPage({ params }: ToolDetailProps) {
           {relatedPosts.length > 0 ? (
             <div className="stack compact-stack">
               {relatedPosts.map((post) => (
-                <Link href={`/news/${post.slug}`} key={post.slug} className="related-link">
+                <Link href={`/news/${post.id}`} key={post.id} className="related-link">
                   <strong>{post.title}</strong>
                   <span className="meta">{post.summary}</span>
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="meta">暂未关联文章。</p>
+            <p className="meta">暂无关联文章。</p>
           )}
         </article>
       </aside>

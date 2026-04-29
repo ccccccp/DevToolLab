@@ -45,31 +45,16 @@ export function PostsBoard({ posts }: PostsBoardProps) {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedPosts = filteredPosts.slice(startIndex, startIndex + PAGE_SIZE);
 
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    setPage(1);
-  }
-
-  function handleStatusChange(value: string) {
-    setStatusFilter(value);
-    setPage(1);
-  }
-
-  function handleFeaturedChange(value: string) {
-    setFeaturedFilter(value);
-    setPage(1);
-  }
-
   return (
     <>
       <div className="section-header posts-section-header">
         <div>
           <span className="eyebrow">文章管理</span>
           <div className="section-title-row">
-            <h1>最小 CMS：文章列表、创建和编辑</h1>
+            <h1>文章列表、创建和编辑</h1>
             <span className="section-count">{filteredPosts.length} 条</span>
           </div>
-          <p className="muted">当前文章数据已经迁到 D1，通过 Worker API 读写。列表支持分页、状态筛选和关键词搜索。</p>
+          <p className="muted">列表支持分页、状态筛选和关键词搜索。</p>
         </div>
         <Link href="/posts/new" className="button primary-button">
           新建文章
@@ -81,13 +66,22 @@ export function PostsBoard({ posts }: PostsBoardProps) {
           <span>搜索</span>
           <input
             value={query}
-            onChange={(event) => handleQueryChange(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
             placeholder="标题 / 摘要 / 分类 / 标签"
           />
         </label>
         <label className="filter-field">
           <span>状态</span>
-          <select value={statusFilter} onChange={(event) => handleStatusChange(event.target.value)}>
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="all">全部状态</option>
             <option value="published">已发布</option>
             <option value="draft">草稿</option>
@@ -95,7 +89,13 @@ export function PostsBoard({ posts }: PostsBoardProps) {
         </label>
         <label className="filter-field">
           <span>推荐</span>
-          <select value={featuredFilter} onChange={(event) => handleFeaturedChange(event.target.value)}>
+          <select
+            value={featuredFilter}
+            onChange={(event) => {
+              setFeaturedFilter(event.target.value);
+              setPage(1);
+            }}
+          >
             <option value="all">全部文章</option>
             <option value="featured">仅推荐</option>
             <option value="normal">非推荐</option>
@@ -138,9 +138,13 @@ export function PostsBoard({ posts }: PostsBoardProps) {
               <h3>{decodeHtmlEntities(post.title)}</h3>
               <p className="muted">{decodeHtmlEntities(post.summary)}</p>
               <p className="meta-line">分类：{decodeHtmlEntities(post.category)}</p>
-              <p className="meta-line">标签：{post.tags.length > 0 ? post.tags.join(" / ") : "无"}</p>
-              <p className="meta-line">更新时间：{new Date(post.updatedAt).toLocaleString("zh-CN")}</p>
-              <Link href={`/posts/${post.slug}`} className="text-link">
+              <p className="meta-line">
+                标签：{post.tags.length > 0 ? post.tags.join(" / ") : "无"}
+              </p>
+              <p className="meta-line">
+                更新时间：{new Date(post.updatedAt).toLocaleString("zh-CN")}
+              </p>
+              <Link href={`/posts/${post.id}`} className="text-link">
                 编辑文章
               </Link>
             </article>

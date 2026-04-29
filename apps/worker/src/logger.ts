@@ -80,8 +80,7 @@ export function logRuntimeEnv(env: AiRuntimeEnv) {
     ai: describeAiRuntimeEnv(env),
     openAiConnectivityProxy: processEnv?.OPENAI_CONNECTIVITY_PROXY || "",
     httpProxy: processEnv?.HTTP_PROXY || "",
-    httpsProxy: processEnv?.HTTPS_PROXY || "",
-    noProxy: processEnv?.NO_PROXY || ""
+    httpsProxy: processEnv?.HTTPS_PROXY || ""
   };
 
   console.log(JSON.stringify(payload));

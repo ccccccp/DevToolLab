@@ -4,6 +4,8 @@ export type SourceStatus = "active" | "paused" | "error";
 export type CrawlTaskStatus = "pending" | "running" | "completed" | "failed";
 export type ReviewStatus = "pending" | "approved" | "changes_requested";
 export type CrawlRunMode = "manual" | "scheduled";
+export type AdminUserRole = "admin" | "editor";
+export type AdminUserStatus = "active" | "disabled";
 
 export const crawlTaskTypeOptions = [
   {
@@ -173,6 +175,17 @@ export type CrawlLogRecord = {
   createdAt: string;
 };
 
+export type AdminUserRecord = {
+  id: string;
+  email: string;
+  displayName: string;
+  role: AdminUserRole;
+  status: AdminUserStatus;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt: string | null;
+};
+
 export type DashboardStats = {
   posts: number;
   publishedPosts: number;
@@ -287,4 +300,5 @@ export const pipelineStages: PipelineStage[] = [
 ];
 
 export * from "./api-client";
+export * from "./request-progress";
 export * from "./toast";

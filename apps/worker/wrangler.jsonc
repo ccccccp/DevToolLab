@@ -8,8 +8,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "devtoollab",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_name": "devtoollab-prod",
+      "database_id": "a0167a5c-669b-4d29-a067-cd5642af3b08",
       "preview_database_id": "devtoollab-local"
     }
   ],
@@ -17,7 +17,8 @@
     "AI_PROVIDER": "openai",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_MODEL": "gpt-4o-mini",
-    "OPENAI_TIMEOUT_MS": "5000"
+    "OPENAI_TIMEOUT_MS": "5000",
+    "DEVTOOLLAB_WORKER_API_SECRET": "1234567890"
     // 切换到 DeepSeek 时，把 AI_PROVIDER 改成 "deepseek"，并填充 DEEPSEEK_* 变量。
     // 切换到 Grok 时，把 AI_PROVIDER 改成 "grok"，并填充 XAI_* 变量。
   }
