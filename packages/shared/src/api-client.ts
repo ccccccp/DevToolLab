@@ -146,32 +146,6 @@ function getWorkerApiSecret() {
   )?.trim();
 }
 
-type WorkerApiBinding = {
-  fetch(request: Request): Promise<Response>;
-};
-
-let workerApiBindingPromise: Promise<WorkerApiBinding | null> | null = null;
-
-async function getWorkerApiBinding() {
-  if (typeof window !== "undefined") {
-    return null;
-  }
-
-  if (!workerApiBindingPromise) {
-    workerApiBindingPromise = (async () => {
-      try {
-        const { getCloudflareContext } = await import("@opennextjs/cloudflare");
-        const context = await getCloudflareContext({ async: true });
-        return (context.env as { WORKER_API?: WorkerApiBinding }).WORKER_API ?? null;
-      } catch {
-        return null;
-      }
-    })();
-  }
-
-  return workerApiBindingPromise;
-}
-
 async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<T> {
   const url = new URL(pathname, `${getApiBaseUrl()}/`).toString();
   const endRequest = beginRequest();
@@ -184,19 +158,16 @@ async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<
 
   let response: Response;
 
-  const request = new Request(url, {
-    method: options?.method ?? "GET",
-    headers: {
-      "content-type": "application/json",
-      ...(workerApiSecret ? { "x-devtoollab-worker-secret": workerApiSecret } : {})
-    },
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-    cache: "no-store"
-  });
-
   try {
-    const workerApiBinding = await getWorkerApiBinding();
-    response = workerApiBinding ? await workerApiBinding.fetch(request) : await fetch(request);
+    response = await fetch(url, {
+      method: options?.method ?? "GET",
+      headers: {
+        "content-type": "application/json",
+        ...(workerApiSecret ? { "x-devtoollab-worker-secret": workerApiSecret } : {})
+      },
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+      cache: "no-store"
+    });
   } catch (error) {
     const cause =
       error instanceof Error ? `${error.name}: ${error.message}` : "Unknown network error";
