@@ -23,7 +23,6 @@ export default async function RootLayout({
 }>) {
   const apiBaseUrl = getAdminApiBaseUrl();
   const session = await getCurrentAdminSession();
-
   return (
     <html lang="zh-CN">
       <body>
@@ -33,7 +32,7 @@ export default async function RootLayout({
               __html: `window.__DEVTOOLLAB_API_BASE_URL__ = ${JSON.stringify(apiBaseUrl)};`
             }}
           />
-        ) : null}
+        ) : <div>未配置 API 基础 URL</div>}
         <TopProgressBar />
         <main>
           <header className="header">

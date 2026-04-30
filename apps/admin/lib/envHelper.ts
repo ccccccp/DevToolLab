@@ -12,15 +12,9 @@ export function getEnv() {
   }
 }
 
-export function getEvnVariable(key: string, defaultValue = ""): string {
-    const env = getEnv();
-    const value = env[key] ?? process.env[key] ?? defaultValue;
-    return typeof value === "string" ? value : defaultValue;
-}
-
 export function getAdminApiBaseUrl() {
     const env = getEnv()
-    const configured = env.DEVTOOLLAB_API_BASE_URL?.trim();
+    const configured = env?.DEVTOOLLAB_API_BASE_URL?.trim();
     if (configured) {
         return configured.replace(/\/+$/, "");
     }
