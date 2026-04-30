@@ -114,42 +114,46 @@ declare global {
 }
 
 function getApiBaseUrl() {
+  const windowBaseUrl =
+    typeof window !== "undefined" ? window.__DEVTOOLLAB_API_BASE_URL__ : undefined;
+
+  const globalEnv = (globalThis as any).__DEVTOOLLAB_ENV__;
+
   const processBaseUrl =
     typeof globalThis !== "undefined"
       ? (globalThis as typeof globalThis & {
-          process?: {
-            env?: {
-              DEVTOOLLAB_API_BASE_URL?: string;
-            };
+        process?: {
+          env?: {
+            DEVTOOLLAB_API_BASE_URL?: string;
           };
-        }).process?.env?.DEVTOOLLAB_API_BASE_URL
+        };
+      }).process?.env?.DEVTOOLLAB_API_BASE_URL
       : undefined;
-  const windowBaseUrl =
-    typeof window !== "undefined" ? window.__DEVTOOLLAB_API_BASE_URL__ : undefined;
+
   const fallbackBaseUrl =
     typeof window !== "undefined" ? window.location.origin : "http://127.0.0.1:8787";
 
-  return (windowBaseUrl || processBaseUrl || fallbackBaseUrl).replace(/\/+$/, "");
+  return (windowBaseUrl || globalEnv?.DEVTOOLLAB_API_BASE_URL || processBaseUrl || fallbackBaseUrl).replace(/\/+$/, "");
 }
 
 function getWorkerApiSecret() {
-  return (
-    typeof globalThis !== "undefined"
-      ? (globalThis as typeof globalThis & {
-          process?: {
-            env?: {
-              DEVTOOLLAB_WORKER_API_SECRET?: string;
-            };
-          };
-        }).process?.env?.DEVTOOLLAB_WORKER_API_SECRET
-      : undefined
-  )?.trim();
+  const globalEnv = (globalThis as any).__DEVTOOLLAB_ENV__;
+  const processEnv = (globalThis as typeof globalThis & {
+    process?: {
+      env?: {
+        DEVTOOLLAB_WORKER_API_SECRET?: string;
+      };
+    };
+  }).process?.env?.DEVTOOLLAB_WORKER_API_SECRET;
+
+  return (globalEnv?.DEVTOOLLAB_WORKER_API_SECRET || processEnv)?.trim();
 }
 
 async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<T> {
   const url = new URL(pathname, `${getApiBaseUrl()}/`).toString();
   const endRequest = beginRequest();
   const workerApiSecret = getWorkerApiSecret();
+
   logApiDebug("request_start", {
     url,
     method: options?.method ?? "GET",
@@ -158,21 +162,23 @@ async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<
 
   let response: Response;
 
+  const params: any = {
+    method: options?.method ?? "GET",
+    headers: {
+      "content-type": "application/json",
+      ...(workerApiSecret ? { "x-devtoollab-worker-secret": workerApiSecret } : {})
+    },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+    cache: "no-store"
+  }
+
   try {
-    response = await fetch(url, {
-      method: options?.method ?? "GET",
-      headers: {
-        "content-type": "application/json",
-        ...(workerApiSecret ? { "x-devtoollab-worker-secret": workerApiSecret } : {})
-      },
-      body: options?.body ? JSON.stringify(options.body) : undefined,
-      cache: "no-store"
-    });
+    response = await fetch(url, params);
   } catch (error) {
     const cause =
       error instanceof Error ? `${error.name}: ${error.message}` : "Unknown network error";
     const message = `DevToolLab API 请求失败：${url}。原始错误：${cause}`;
-    
+
     if (typeof window !== "undefined") {
       toast.error(message);
     }
@@ -183,7 +189,7 @@ async function apiFetch<T>(pathname: string, options?: RequestOptions): Promise<
   if (!response.ok) {
     const message = await response.text();
     const errorMsg = message || `Request failed: ${response.status}`;
-    
+
     if (typeof window !== "undefined") {
       toast.error(errorMsg);
     }

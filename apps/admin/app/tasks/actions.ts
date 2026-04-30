@@ -42,6 +42,10 @@ export async function runCrawlTaskAction(formData: FormData) {
   redirect("/tasks");
 }
 
+export async function runCrawlTaskDirectAction(id: string) {
+  return runCrawlTask(id);
+}
+
 export async function createReviewItemAction(formData: FormData) {
   await createReviewItem({
     entityType: text(formData, "entityType") as ReviewQueueItem["entityType"],

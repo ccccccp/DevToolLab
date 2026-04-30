@@ -23,16 +23,19 @@ export default async function RootLayout({
 }>) {
   const apiBaseUrl = getAdminApiBaseUrl();
   const session = await getCurrentAdminSession();
+
   return (
     <html lang="zh-CN">
       <body>
-        {apiBaseUrl ? (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `window.__DEVTOOLLAB_API_BASE_URL__ = ${JSON.stringify(apiBaseUrl)};`
-            }}
-          />
-        ) : <div>未配置 API 基础 URL</div>}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.__DEVTOOLLAB_API_BASE_URL__ = ${JSON.stringify(apiBaseUrl)};
+            `
+          }}
+        />
+        {!apiBaseUrl && <div className="banner error">未配置 API 基础 URL，后台功能可能受限</div>}
+
         <TopProgressBar />
         <main>
           <header className="header">

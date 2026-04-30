@@ -13,11 +13,12 @@ import {
   type ReviewQueueItem,
   type SourceRecord
 } from "@devtoollab/shared";
-import { listTaskLogs, runCrawlTask } from "@devtoollab/shared/api-client";
+import { listTaskLogs } from "@devtoollab/shared/api-client";
 import {
   bulkDeleteReviewItemsAction,
   createCrawlTaskAction,
   createReviewItemAction,
+  runCrawlTaskDirectAction,
   updateCrawlTaskStatusAction
 } from "./actions";
 import { ReviewActions } from "./review-actions";
@@ -399,8 +400,9 @@ function TaskRunLogDialog({ task }: { task: CrawlTaskRecord }) {
     void refreshLogs();
     void (async () => {
       try {
-        await runCrawlTask(task.id);
+        await runCrawlTaskDirectAction(task.id);
       } catch (error) {
+
         if (!cancelled) {
           setErrorMessage(error instanceof Error ? error.message : String(error));
         }
