@@ -12,7 +12,7 @@ type SummaryInput = {
   publishedAt?: string | null;
 };
 
-const DEFAULT_TIMEOUT_MS = 2500;
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 function cleanText(value: string) {
   return value.replace(/\s+/g, " ").trim();

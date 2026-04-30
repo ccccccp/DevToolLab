@@ -26,7 +26,7 @@
     "AI_PROVIDER": "openai",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_MODEL": "gpt-4o-mini",
-    "OPENAI_TIMEOUT_MS": "5000",
+    "OPENAI_TIMEOUT_MS": "15000",
     "DEVTOOLLAB_WORKER_API_SECRET": "1234567890"
     // 切换到 DeepSeek 时，把 AI_PROVIDER 改成 "deepseek"，并填充 DEEPSEEK_* 变量。
     // 切换到 Grok 时，把 AI_PROVIDER 改成 "grok"，并填充 XAI_* 变量。

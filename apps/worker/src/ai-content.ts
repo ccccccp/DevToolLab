@@ -24,7 +24,7 @@ export type GeneratedArticleContent = {
   usedFallback: boolean;
 };
 
-const DEFAULT_TIMEOUT_MS = 8_000;
+const DEFAULT_TIMEOUT_MS = 60_000;
 const MAX_INPUT_TEXT_LENGTH = 12_000;
 const MAX_TAGS = 5;
 
