@@ -1,6 +1,8 @@
 import type { AdminUserRecord } from "@devtoollab/shared";
+import { getEnv } from "./envHelper";
 
 export const ADMIN_SESSION_COOKIE = "devtoollab_admin_session";
+
 
 export type AdminSession = {
   userId: string;
@@ -12,7 +14,8 @@ export type AdminSession = {
 };
 
 function getSessionSecret() {
-  return process.env.ADMIN_SESSION_SECRET?.trim() || "";
+  const env = getEnv();
+  return env?.ADMIN_SESSION_SECRET?.trim() || "";
 }
 
 function textEncoder(value: string) {

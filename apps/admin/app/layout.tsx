@@ -5,21 +5,16 @@ import { ToastContainer } from "./toast-container";
 import { TopProgressBar } from "./top-progress-bar";
 import { logoutAction } from "./logout/actions";
 import { getCurrentAdminSession } from "../lib/server-session";
+import { getAdminApiBaseUrl } from '../lib/envHelper';
 import "./globals.css";
+
 
 export const metadata: Metadata = {
   title: `${siteMeta.name} Admin`,
   description: "DevToolLab 的后台运营系统。"
 };
 
-function getAdminApiBaseUrl() {
-  const configured = process.env.DEVTOOLLAB_API_BASE_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/+$/, "");
-  }
 
-  return process.env.NODE_ENV === "development" ? "http://127.0.0.1:8787" : "";
-}
 
 export default async function RootLayout({
   children
